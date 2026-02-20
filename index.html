@@ -1,72 +1,138 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="fr">
 <head>
-<meta charset="UTF-8">
-<title>DZGO - DZ Network Invest 🇩🇿</title>
-
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>DZGO 🇩🇿</title>
 <style>
-body{
-font-family: Arial, sans-serif;
-background:#0b0b0b;
-color:white;
-text-align:center;
-padding:30px;
-}
-
-h1{
-color:#00ff99;
-font-size:32px;
-}
-
-input, button{
-padding:12px;
-font-size:18px;
-width:80%;
-max-width:400px;
-margin:10px auto;
-border-radius:6px;
-border:none;
-}
-
-button{
-background:#00ff99;
-cursor:pointer;
-font-weight:bold;
-}
-
-button:hover{
-background:#00cc77;
-}
+body{margin:0;font:16px Arial;background:#0f1417;color:#fff}
+.w{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}
+.c{width:880px;max-width:100%;text-align:center}
+.h{font-size:56px;font-weight:900;letter-spacing:-1px;margin:0 0 6px}
+.sub{opacity:.9;font-weight:900;margin:0 0 18px}
+.b{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+#q,#pmax{padding:14px 16px;border:1px solid #2a333a;border-radius:999px;font-size:16px;outline:none;background:#0b0f12;color:#fff}
+#q{width:520px;max-width:100%}
+#pmax{width:160px}
+button{padding:12px 16px;border-radius:999px;border:1px solid #2a333a;background:#0b0f12;color:#fff;cursor:pointer;font-weight:900}
+button:hover{filter:brightness(1.12)}
+.i{font-size:13px;opacity:.8;margin-top:10px;line-height:1.35}
+.p{margin-top:18px;text-align:left;border:1px solid #2a333a;border-radius:16px;padding:14px;background:#0b0f12}
+.r{display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:space-between}
+.k{font-size:12px;padding:6px 10px;border:1px solid #2a333a;border-radius:999px;background:#0f1417}
+.m{width:100%;margin-top:10px;border:1px solid #2a333a;border-radius:12px;background:#0f1417;padding:10px;font-size:13px;white-space:pre-wrap}
+.u{width:100%;margin-top:10px;border:1px solid #2a333a;border-radius:12px;background:#0f1417;padding:10px;font-size:12px;word-break:break-all;opacity:.9}
+a{color:#3ddc84;text-decoration:none;font-weight:900}
+a:hover{text-decoration:underline}
+.green{color:#3ddc84}
 </style>
 </head>
-
 <body>
+<div class="w"><div class="c">
+  <div class="h"><span class="green">DZGO</span> 🇩🇿</div>
+  <div class="sub">DZ Network Invest</div>
 
-<h1>DZGO 🇩🇿</h1>
-<h2>DZ Network Invest</h2>
+  <div class="b">
+    <input id="q" placeholder="Rechercher sur Leboncoin (PS4, Dyson Airwrap, voiture...)" autocomplete="off">
+    <input id="pmax" inputmode="numeric" placeholder="Prix max (€)">
+    <button id="go" type="button">Rechercher</button>
+  </div>
 
-<p>Recherche LeBonCoin</p>
+  <div class="i">Règles fixes : <b>30 km</b> autour de Montceau • <b>Particuliers</b> • <b>Récent</b> • <b>Prix max auto</b> si produit connu (ou manuel).</div>
 
-<input id="q" placeholder="Produit...">
-<input id="p" placeholder="Prix max €">
-
-<button onclick="go()">RECHERCHER</button>
+  <div class="p">
+    <div class="r">
+      <div class="k" id="v">Verdict : —</div>
+      <div class="k" id="cap">Prix max : —</div>
+      <div class="k"><a id="link" href="#" target="_blank" rel="noreferrer">Ouvrir dans un nouvel onglet</a></div>
+      <button id="copy" type="button">Copier le message</button>
+    </div>
+    <div class="m" id="msg"></div>
+    <div class="u" id="dbg">URL : —</div>
+  </div>
+</div></div>
 
 <script>
-function go(){
-let q=document.getElementById("q").value;
-let p=document.getElementById("p").value;
+(()=> {
+  const FIX_LOC="Montceau-les-Mines_71300__46.67817_4.36666_30000"; // 30 km
+  const MSG="Bonjour, Je suis intéressé, l’article est-il toujours disponible ? Je peux venir rapidement. Merci.";
 
-let url="https://www.leboncoin.fr/recherche?text="
-+encodeURIComponent(q)
-+"&price=max:"+p
-+"&sort=time&order=desc";
+  const SYN={
+    "ps4 pro":"ps4","playstation 4":"ps4","ps4 slim":"ps4 slim",
+    "ps5 digital":"ps5","switch oled":"nintendo switch","xbox x":"xbox series x"
+  };
+  const CAP={"ps4":120,"ps4 slim":140,"ps5":350,"xbox series x":350,"nintendo switch":200,"dyson airwrap":280};
 
-window.open(url,"_blank");
-}
+  const $=id=>document.getElementById(id);
+  const q=$("q"), pmax=$("pmax"), go=$("go"), v=$("v"), cap=$("cap"), link=$("link"), copy=$("copy"), msg=$("msg"), dbg=$("dbg");
+  msg.textContent=MSG;
+
+  const norm=s=>String(s||"").trim().toLowerCase().replace(/\s+/g," ");
+  const onlyDigits=s=>String(s||"").replace(/[^\d]/g,""); // enlève "€", "e", espaces...
+
+  function buildUrl(){
+    let t=norm(q.value);
+    if(!t) return null;
+    if(SYN[t]) t=SYN[t];
+
+    // Prix max: si l'utilisateur tape un nombre -> prioritaire, sinon CAP auto
+    const manual = Number(onlyDigits(pmax.value||""));
+    const auto = (typeof CAP[t]==="number") ? CAP[t] : null;
+    const max = (manual>0) ? manual : auto;
+
+    let url="https://www.leboncoin.fr/recherche?";
+    url+="text="+encodeURIComponent(t);
+    url+="&locations="+encodeURIComponent(FIX_LOC);
+    url+="&owner_type=private";
+    url+="&sort=time&order=desc"; // ✅ RÉCENT
+
+    if(max){
+      url+="&price=0-"+max;
+      cap.textContent="Prix max : "+max+" €"+(manual>0?" (manuel)":" (auto)");
+      v.textContent="Verdict : Filtré (récent + prix max)";
+    }else{
+      cap.textContent="Prix max : (non défini)";
+      v.textContent="Verdict : Recherche libre (récent + règles fixes)";
+    }
+    return url;
+  }
+
+  function refresh(){
+    const url=buildUrl();
+    if(!url){
+      v.textContent="Verdict : —";
+      cap.textContent="Prix max : —";
+      link.href="#";
+      dbg.textContent="URL : —";
+      return;
+    }
+    link.href=url;
+    dbg.textContent="URL : "+url;
+  }
+
+  function run(){
+    const url=buildUrl();
+    if(!url){ alert("Tape un produit."); return; }
+    window.location.assign(url);
+  }
+
+  function copyMsg(){
+    const done=()=>{ copy.textContent="Copié ✅"; setTimeout(()=>copy.textContent="Copier le message",1200); };
+    if(navigator.clipboard?.writeText){
+      navigator.clipboard.writeText(MSG).then(done).catch(()=>prompt("Copie le message :",MSG));
+    }else prompt("Copie le message :",MSG);
+  }
+
+  go.onclick=run;
+  q.oninput=refresh;
+  pmax.oninput=refresh;
+  q.onkeydown=e=>{ if(e.key==="Enter"){ e.preventDefault(); run(); } };
+  pmax.onkeydown=e=>{ if(e.key==="Enter"){ e.preventDefault(); run(); } };
+  copy.onclick=copyMsg;
+
+  refresh();
+  setTimeout(()=>{ try{ q.focus(); }catch(e){} },50);
+})();
 </script>
-
 </body>
 </html>
