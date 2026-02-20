@@ -1,1 +1,72 @@
-ok
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>DZGO - DZ Network Invest 🇩🇿</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+body{
+font-family: Arial, sans-serif;
+background:#0b0b0b;
+color:white;
+text-align:center;
+padding:30px;
+}
+
+h1{
+color:#00ff99;
+font-size:32px;
+}
+
+input, button{
+padding:12px;
+font-size:18px;
+width:80%;
+max-width:400px;
+margin:10px auto;
+border-radius:6px;
+border:none;
+}
+
+button{
+background:#00ff99;
+cursor:pointer;
+font-weight:bold;
+}
+
+button:hover{
+background:#00cc77;
+}
+</style>
+</head>
+
+<body>
+
+<h1>DZGO 🇩🇿</h1>
+<h2>DZ Network Invest</h2>
+
+<p>Recherche LeBonCoin</p>
+
+<input id="q" placeholder="Produit...">
+<input id="p" placeholder="Prix max €">
+
+<button onclick="go()">RECHERCHER</button>
+
+<script>
+function go(){
+let q=document.getElementById("q").value;
+let p=document.getElementById("p").value;
+
+let url="https://www.leboncoin.fr/recherche?text="
++encodeURIComponent(q)
++"&price=max:"+p
++"&sort=time&order=desc";
+
+window.open(url,"_blank");
+}
+</script>
+
+</body>
+</html>
